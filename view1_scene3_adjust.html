@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>场景3 · 条件微调重筛</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .hotel-scroll { overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+  .hotel-scroll::-webkit-scrollbar { height: 6px; display: block; }
+  .hotel-scroll::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 3px; margin: 0 4px; }
+  .hotel-scroll::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #3b82f6, #6366f1); border-radius: 3px; min-width: 30px; border: 1px solid #fff; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg-enter { animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  @keyframes listOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(10px); }
+  }
+  .list-out { animation: listOut 0.3s ease-out forwards; }
+
+  .typing-dots span {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background-color: #3b82f6; margin: 0 2px;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+  }
+  .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+  .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+
+  @keyframes flashHighlight {
+    0%, 100% { box-shadow: 0 0 0 rgba(59, 130, 246, 0); }
+    40%       { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22); }
+  }
+  .flash-hl { animation: flashHighlight 1.4s ease-out; }
+
+  /* 历史对话抽屉动画 */
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes slideInRight { from { transform: translateX(100%) } to { transform: translateX(0) } }
+  .history-mask { animation: fadeIn 0.25s ease-out both; }
+  .history-panel { animation: slideInRight 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+  .history-item.active {
+    background: linear-gradient(90deg, rgba(59,130,246,0.1), rgba(99,102,241,0.06));
+    border-left: 3px solid #6366f1;
+  }
+</style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.absolute{position:absolute}.relative{position:relative}.bottom-6{bottom:1.5rem}.left-1\/2{left:50%}.left-4{left:1rem}.right-4{right:1rem}.top-1\/2{top:50%}.z-10{z-index:10}.z-30{z-index:30}.mx-auto{margin-left:auto;margin-right:auto}.my-2{margin-top:0.5rem;margin-bottom:0.5rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.ml-0\.5{margin-left:0.125rem}.ml-1{margin-left:0.25rem}.ml-10{margin-left:2.5rem}.mr-2{margin-right:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.flex{display:flex}.hidden{display:none}.h-1\.5{height:0.375rem}.h-10{height:2.5rem}.h-24{height:6rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-full{height:100%}.h-px{height:1px}.h-screen{height:100vh}.w-0{width:0px}.w-1\.5{width:0.375rem}.w-10{width:2.5rem}.w-56{width:14rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0px}.max-w-\[88\%\]{max-width:88%}.max-w-md{max-width:28rem}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.snap-x{scroll-snap-type:x var(--tw-scroll-snap-strictness)}.snap-mandatory{--tw-scroll-snap-strictness:mandatory}.snap-start{scroll-snap-align:start}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rounded-2xl{border-radius:1rem}.rounded-\[2rem\]{border-radius:2rem}.rounded-full{border-radius:9999px}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded-tl-sm{border-top-left-radius:0.125rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-blue-100\/50{border-color:rgb(219 234 254 / 0.5)}.border-gray-100\/50{border-color:rgb(243 244 246 / 0.5)}.border-orange-100\/50{border-color:rgb(255 237 213 / 0.5)}.border-purple-100\/50{border-color:rgb(243 232 255 / 0.5)}.border-white{--tw-border-opacity:1;border-color:rgb(255 255 255 / var(--tw-border-opacity, 1))}.border-white\/50{border-color:rgb(255 255 255 / 0.5)}.border-white\/60{border-color:rgb(255 255 255 / 0.6)}.border-white\/90{border-color:rgb(255 255 255 / 0.9)}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity, 1))}.bg-green-400{--tw-bg-opacity:1;background-color:rgb(74 222 128 / var(--tw-bg-opacity, 1))}.bg-green-50\/80{background-color:rgb(240 253 244 / 0.8)}.bg-orange-50{--tw-bg-opacity:1;background-color:rgb(255 247 237 / var(--tw-bg-opacity, 1))}.bg-purple-50{--tw-bg-opacity:1;background-color:rgb(250 245 255 / var(--tw-bg-opacity, 1))}.bg-transparent{background-color:transparent}.bg-white\/60{background-color:rgb(255 255 255 / 0.6)}.bg-white\/80{background-color:rgb(255 255 255 / 0.8)}.bg-white\/90{background-color:rgb(255 255 255 / 0.9)}.bg-gradient-to-br{background-image:linear-gradient(to bottom right, var(--tw-gradient-stops))}.from-blue-500{--tw-gradient-from:#3b82f6 var(--tw-gradient-from-position);--tw-gradient-to:rgb(59 130 246 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-slate-50{--tw-gradient-from:#f8fafc var(--tw-gradient-from-position);--tw-gradient-to:rgb(248 250 252 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.via-gray-50{--tw-gradient-to:rgb(249 250 251 / 0)  var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), #f9fafb var(--tw-gradient-via-position), var(--tw-gradient-to)}.to-indigo-50\/30{--tw-gradient-to:rgb(238 242 255 / 0.3) var(--tw-gradient-to-position)}.to-indigo-500{--tw-gradient-to:#6366f1 var(--tw-gradient-to-position)}.object-cover{object-fit:cover}.p-3{padding:0.75rem}.p-4{padding:1rem}.px-1{padding-left:0.25rem;padding-right:0.25rem}.px-1\.5{padding-left:0.375rem;padding-right:0.375rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-2\.5{padding-left:0.625rem;padding-right:0.625rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.pb-40{padding-bottom:10rem}.pb-5{padding-bottom:1.25rem}.pr-2{padding-right:0.5rem}.pt-2{padding-top:0.5rem}.text-center{text-align:center}.text-\[10px\]{font-size:10px}.text-\[13px\]{font-size:13px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity, 1))}.text-gray-400\/80{color:rgb(156 163 175 / 0.8)}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39 / var(--tw-text-opacity, 1))}.text-green-500{--tw-text-opacity:1;color:rgb(34 197 94 / var(--tw-text-opacity, 1))}.text-green-600{--tw-text-opacity:1;color:rgb(22 163 74 / var(--tw-text-opacity, 1))}.text-orange-500{--tw-text-opacity:1;color:rgb(249 115 22 / var(--tw-text-opacity, 1))}.text-orange-600{--tw-text-opacity:1;color:rgb(234 88 12 / var(--tw-text-opacity, 1))}.text-purple-600{--tw-text-opacity:1;color:rgb(147 51 234 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.placeholder-gray-400::placeholder{--tw-placeholder-opacity:1;color:rgb(156 163 175 / var(--tw-placeholder-opacity, 1))}.shadow-\[0_8px_30px_rgb\(0\2c 0\2c 0\2c 0\.08\)\]{--tw-shadow:0 8px 30px rgb(0,0,0,0.08);--tw-shadow-colored:0 8px 30px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.backdrop-blur-lg{--tw-backdrop-blur:blur(16px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.active\:scale-\[0\.94\]:active{--tw-scale-x:0.94;--tw-scale-y:0.94;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:bg-gray-100:active{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.absolute{position:absolute}.relative{position:relative}.bottom-6{bottom:1.5rem}.left-1\/2{left:50%}.left-4{left:1rem}.right-4{right:1rem}.top-1\/2{top:50%}.z-10{z-index:10}.z-30{z-index:30}.mx-auto{margin-left:auto;margin-right:auto}.my-2{margin-top:0.5rem;margin-bottom:0.5rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.ml-0\.5{margin-left:0.125rem}.ml-1{margin-left:0.25rem}.ml-10{margin-left:2.5rem}.mr-2{margin-right:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.ml-2{margin-left:0.5rem}.flex{display:flex}.hidden{display:none}.h-1\.5{height:0.375rem}.h-10{height:2.5rem}.h-24{height:6rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-full{height:100%}.h-px{height:1px}.h-screen{height:100vh}.w-0{width:0px}.w-1\.5{width:0.375rem}.w-10{width:2.5rem}.w-56{width:14rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0px}.max-w-\[88\%\]{max-width:88%}.max-w-md{max-width:28rem}.max-w-\[75\%\]{max-width:75%}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-not-allowed{cursor:not-allowed}.snap-x{scroll-snap-type:x var(--tw-scroll-snap-strictness)}.snap-mandatory{--tw-scroll-snap-strictness:mandatory}.snap-start{scroll-snap-align:start}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rounded-2xl{border-radius:1rem}.rounded-\[2rem\]{border-radius:2rem}.rounded-full{border-radius:9999px}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded-tl-sm{border-top-left-radius:0.125rem}.rounded-tr-sm{border-top-right-radius:0.125rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-blue-100\/50{border-color:rgb(219 234 254 / 0.5)}.border-gray-100\/50{border-color:rgb(243 244 246 / 0.5)}.border-orange-100\/50{border-color:rgb(255 237 213 / 0.5)}.border-purple-100\/50{border-color:rgb(243 232 255 / 0.5)}.border-white{--tw-border-opacity:1;border-color:rgb(255 255 255 / var(--tw-border-opacity, 1))}.border-white\/50{border-color:rgb(255 255 255 / 0.5)}.border-white\/60{border-color:rgb(255 255 255 / 0.6)}.border-white\/90{border-color:rgb(255 255 255 / 0.9)}.border-green-100\/50{border-color:rgb(220 252 231 / 0.5)}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity, 1))}.bg-green-400{--tw-bg-opacity:1;background-color:rgb(74 222 128 / var(--tw-bg-opacity, 1))}.bg-green-50\/80{background-color:rgb(240 253 244 / 0.8)}.bg-orange-50{--tw-bg-opacity:1;background-color:rgb(255 247 237 / var(--tw-bg-opacity, 1))}.bg-purple-50{--tw-bg-opacity:1;background-color:rgb(250 245 255 / var(--tw-bg-opacity, 1))}.bg-transparent{background-color:transparent}.bg-white\/60{background-color:rgb(255 255 255 / 0.6)}.bg-white\/80{background-color:rgb(255 255 255 / 0.8)}.bg-white\/90{background-color:rgb(255 255 255 / 0.9)}.bg-blue-50\/80{background-color:rgb(239 246 255 / 0.8)}.bg-green-100{--tw-bg-opacity:1;background-color:rgb(220 252 231 / var(--tw-bg-opacity, 1))}.bg-green-50{--tw-bg-opacity:1;background-color:rgb(240 253 244 / var(--tw-bg-opacity, 1))}.bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right, var(--tw-gradient-stops))}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.from-blue-500{--tw-gradient-from:#3b82f6 var(--tw-gradient-from-position);--tw-gradient-to:rgb(59 130 246 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-slate-50{--tw-gradient-from:#f8fafc var(--tw-gradient-from-position);--tw-gradient-to:rgb(248 250 252 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.via-gray-50{--tw-gradient-to:rgb(249 250 251 / 0)  var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), #f9fafb var(--tw-gradient-via-position), var(--tw-gradient-to)}.to-indigo-50\/30{--tw-gradient-to:rgb(238 242 255 / 0.3) var(--tw-gradient-to-position)}.to-indigo-500{--tw-gradient-to:#6366f1 var(--tw-gradient-to-position)}.object-cover{object-fit:cover}.p-3{padding:0.75rem}.p-4{padding:1rem}.px-1{padding-left:0.25rem;padding-right:0.25rem}.px-1\.5{padding-left:0.375rem;padding-right:0.375rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-2\.5{padding-left:0.625rem;padding-right:0.625rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.pb-40{padding-bottom:10rem}.pb-5{padding-bottom:1.25rem}.pr-2{padding-right:0.5rem}.pt-2{padding-top:0.5rem}.text-center{text-align:center}.text-\[10px\]{font-size:10px}.text-\[13px\]{font-size:13px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity, 1))}.text-gray-400\/80{color:rgb(156 163 175 / 0.8)}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39 / var(--tw-text-opacity, 1))}.text-green-500{--tw-text-opacity:1;color:rgb(34 197 94 / var(--tw-text-opacity, 1))}.text-green-600{--tw-text-opacity:1;color:rgb(22 163 74 / var(--tw-text-opacity, 1))}.text-orange-500{--tw-text-opacity:1;color:rgb(249 115 22 / var(--tw-text-opacity, 1))}.text-orange-600{--tw-text-opacity:1;color:rgb(234 88 12 / var(--tw-text-opacity, 1))}.text-purple-600{--tw-text-opacity:1;color:rgb(147 51 234 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-green-700{--tw-text-opacity:1;color:rgb(21 128 61 / var(--tw-text-opacity, 1))}.text-blue-700{--tw-text-opacity:1;color:rgb(29 78 216 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.placeholder-gray-400::placeholder{--tw-placeholder-opacity:1;color:rgb(156 163 175 / var(--tw-placeholder-opacity, 1))}.opacity-50{opacity:0.5}.shadow-\[0_8px_30px_rgb\(0\2c 0\2c 0\2c 0\.08\)\]{--tw-shadow:0 8px 30px rgb(0,0,0,0.08);--tw-shadow-colored:0 8px 30px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.ring-1{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.ring-2{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.ring-blue-200\/60{--tw-ring-color:rgb(191 219 254 / 0.6)}.ring-blue-400\/40{--tw-ring-color:rgb(96 165 250 / 0.4)}.backdrop-blur-lg{--tw-backdrop-blur:blur(16px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.active\:scale-\[0\.94\]:active{--tw-scale-x:0.94;--tw-scale-y:0.94;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:bg-gray-100:active{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}</style></head>
+<body class="bg-gray-200 flex justify-center items-center h-screen">
+
+<div class="w-full max-w-md mx-auto h-screen relative overflow-hidden flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-indigo-50/30">
+
+  <header class="flex items-center justify-between px-4 py-3 bg-white/60 backdrop-blur-lg border-b border-white/50 z-10 flex-shrink-0">
+    <button onclick="window.location.href='view0_home.html'" class="w-9 h-9 rounded-full bg-white/60 backdrop-blur-sm border border-white active:bg-gray-100 transition-colors flex items-center justify-center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <div class="flex items-center gap-2">
+      <div class="text-center">
+        <div class="text-sm font-semibold text-gray-800">场景3 · 条件微调</div>
+        <div class="flex items-center gap-1 justify-center">
+          <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+          <span class="text-[10px] text-green-500">上下文记忆</span>
+        </div>
+      </div>
+    </div>
+    <button id="historyBtn" class="w-9 h-9 rounded-full bg-white/60 backdrop-blur-sm border border-white active:bg-gray-100 transition-colors flex items-center justify-center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </header>
+
+  <!-- 历史对话抽屉 -->
+  <div id="historyMask" class="hidden fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-black/30 history-mask"></div>
+    <div class="history-panel absolute right-0 top-0 h-full w-[80%] max-w-[300px] bg-white/95 backdrop-blur-2xl shadow-2xl flex flex-col">
+      <div class="px-4 py-4 border-b border-gray-100/70 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="text-sm font-semibold text-gray-800">历史对话</span>
+        </div>
+        <button id="historyClose" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-2 py-3 space-y-1.5">
+        <a href="view1_scene1_exact.html" class="history-item block rounded-xl px-3 py-3 transition-colors hover:bg-gray-50 border-l-3 border-transparent">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[13px] font-semibold text-gray-800">✨ 精确需求</span>
+            <span class="text-[10px] text-gray-400">14:30</span>
+          </div>
+          <div class="text-[11.5px] text-gray-500 leading-snug line-clamp-2">你好，去南京看周杰伦演唱会，预算400以内，要近地铁干净，周五早上高铁...</div>
+        </a>
+        <a href="view1_scene2_fuzzy.html" class="history-item block rounded-xl px-3 py-3 transition-colors hover:bg-gray-50 border-l-3 border-transparent">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[13px] font-semibold text-gray-800">💬 意图澄清</span>
+            <span class="text-[10px] text-gray-400">14:32</span>
+          </div>
+          <div class="text-[11.5px] text-gray-500 leading-snug line-clamp-2">下周五想去南京看周杰伦演唱会，帮我安排一下...</div>
+        </a>
+        <a href="view1_scene3_adjust.html" class="history-item active block rounded-xl px-3 py-3 transition-colors hover:bg-gray-50">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[13px] font-semibold text-gray-800">⚙️ 条件微调</span>
+            <span class="text-[10px] text-gray-400">现在</span>
+          </div>
+          <div class="text-[11.5px] text-gray-500 leading-snug line-clamp-2">酒店有点超预算，能不能降到300以内一晚？高铁改到周四晚上走吧...</div>
+        </a>
+        <a href="view1_scene4_ticket.html" class="history-item block rounded-xl px-3 py-3 transition-colors hover:bg-gray-50 border-l-3 border-transparent">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[13px] font-semibold text-gray-800">🛟 抢票兜底</span>
+            <span class="text-[10px] text-gray-400">14:40</span>
+          </div>
+          <div class="text-[11.5px] text-gray-500 leading-snug line-clamp-2">10月1日天津到南京的高铁票怎么全没了？我还等着去看演唱会呢...</div>
+        </a>
+      </div>
+      <div class="px-3 py-3 border-t border-gray-100/70">
+        <a href="view0_home.html" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[13px] font-semibold py-2.5 rounded-xl shadow-sm active:scale-[0.98] transition-transform">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          添加新对话
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center my-2 flex-shrink-0">
+    <span class="text-xs text-gray-500 bg-white/60 backdrop-blur-sm border border-white/50 px-3 py-1 rounded-full">今天 14:35</span>
+  </div>
+
+  <main id="chatArea" class="flex-1 overflow-y-auto px-4 pb-40">
+
+    <!-- 初始直接显示：AI引导 + 交通 + 酒店推荐（第一轮结果） -->
+    <div class="flex justify-start mb-4">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 mr-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">智</span>
+      </div>
+      <div class="max-w-[88%] bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl rounded-tl-sm shadow-sm px-4 py-3">
+        <p class="text-sm text-gray-700 leading-relaxed">好的，酒店预算 400 以内、周五早班高铁。首轮推荐结果如下：</p>
+      </div>
+    </div>
+
+    <div id="round1Transport" class="mb-4 ml-10 list-out" style="display: none;">
+      <div class="rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-1.5"><span class="text-lg">🚄</span><span class="text-base font-bold text-gray-800">上海虹桥 ➔ 南京南 · 周五早班</span></div>
+          <span class="text-xs text-green-600 bg-green-50/80 px-2 py-0.5 rounded-full">当前方案</span>
+        </div>
+        <div class="border border-gray-100/50 rounded-xl p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2"><span class="text-base font-bold text-gray-900">G123</span><span class="text-xs text-gray-500">复兴号 · 1.5h</span></div>
+            <span class="text-xs text-green-600 bg-green-50/80 px-2 py-0.5 rounded-full">🟢 余票充足</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-center"><div class="text-lg font-bold text-gray-900">09:00</div><div class="text-xs text-gray-500">上海虹桥</div></div>
+            <div class="flex-1 px-3"><div class="h-px bg-gray-200 relative"><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-500 rounded-full px-2 py-0.5"><span class="text-white text-xs font-semibold" style="width: 25.975px; height: 20px; transform: matrix(1, 0, 0, 1, 0, -4);">1.5h</span></div></div></div>
+            <div class="text-center"><div class="text-lg font-bold text-gray-900">10:30</div><div class="text-xs text-gray-500">南京南</div></div>
+          </div>
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100/50">
+            <div><span class="text-lg font-bold text-orange-500">¥228</span><span class="text-xs text-gray-500"> 二等座</span></div>
+            <button class="bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm">已锁定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 首轮酒店推荐（会在条件变更时整个替换） -->
+    <div id="hotelRoundWrapper" class="mb-4 ml-10 list-out" style="display: none;">
+      <div class="px-1">
+        <div class="flex items-center justify-between mb-3 px-2">
+          <span class="text-base font-bold text-gray-800">🏨 为你挑选3家酒店</span>
+          <span class="text-xs text-gray-400">3 套方案</span>
+        </div>
+        <div class="hotel-scroll pb-5">
+          <div class="flex gap-3 snap-x snap-mandatory" style="width: max-content;">
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">元通亚朵酒店</div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-md border border-blue-100/50">近地铁直达场馆</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥350</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">新街口设计民宿</div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2"><span class="bg-purple-50 text-purple-600 text-xs px-1.5 py-0.5 rounded-md border border-purple-100/50">下楼即Citywalk</span></div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥380</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">夫子庙桔子水晶</div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2"><span class="bg-orange-50 text-orange-600 text-xs px-1.5 py-0.5 rounded-md border border-orange-100/50">近景区</span></div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥320</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 动态追加区 -->
+    <div id="chatStream"><div class="flex justify-end mb-4 msg-enter" style="animation-delay: 0ms;">
+      <div class="max-w-[75%] bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-md">
+        <p class="text-sm leading-relaxed">酒店都有点超预算，能不能降到300以内一晚？另外高铁改到周四晚上走吧，想多玩半天</p>
+      </div>
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 ml-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">我</span>
+      </div></div><div class="flex justify-start mb-4 msg-enter" style="animation-delay: 0ms;">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 mr-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">智</span>
+      </div>
+      <div class="max-w-[88%] bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl rounded-tl-sm shadow-sm px-4 py-3">
+        <p class="text-sm text-gray-700 leading-relaxed">好的，已为您调整筛选条件：酒店预算≤300元/晚，去程更新为周四晚班高铁。为您重新匹配：</p>
+      </div></div><div class="mb-4 ml-10 msg-enter flash-hl" style="animation-delay: 0ms;">
+      <div class="rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-1.5"><span class="text-lg">🚄</span><span class="text-base font-bold text-gray-800">上海虹桥 ➔ 南京南 · 周四晚班</span></div>
+          <span class="text-xs text-blue-600 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-100/50">条件已更新</span>
+        </div>
+        <div class="border border-gray-100/50 rounded-xl p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2"><span class="text-base font-bold text-gray-900">G2057</span><span class="text-xs text-gray-500">和谐号 · 1.6h</span></div>
+            <span class="text-xs text-green-600 bg-green-50/80 px-2 py-0.5 rounded-full">🟢 余票充足</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-center"><div class="text-lg font-bold text-gray-900">19:30</div><div class="text-xs text-gray-500">上海虹桥</div></div>
+            <div class="flex-1 px-3"><div class="h-px bg-gray-200 relative"><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-500 rounded-full px-2 py-0.5"><span class="text-white text-xs font-semibold">1.6h</span></div></div></div>
+            <div class="text-center"><div class="text-lg font-bold text-gray-900">21:05</div><div class="text-xs text-gray-500">南京南</div></div>
+          </div>
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100/50">
+            <div><span class="text-lg font-bold text-orange-500">¥228</span><span class="text-xs text-gray-500"> 二等座</span></div>
+            <button class="bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm">已锁定</button>
+          </div>
+        </div>
+      </div></div><div class="mb-4 ml-10 msg-enter flash-hl" style="animation-delay: 0ms;">
+      <div class="px-1">
+        <div class="flex items-center justify-between mb-3 px-2">
+          <span class="text-base font-bold text-gray-800">🏨 条件重筛 · 预算 ≤ 300 元</span>
+          <span class="text-xs text-green-600 bg-green-50/80 px-2 py-0.5 rounded-full border border-green-100/50">符合预算</span>
+        </div>
+        <div class="hotel-scroll pb-5">
+          <div class="flex gap-3 snap-x snap-mandatory" style="width: max-content;">
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0 ring-1 ring-blue-200/60">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">桔子酒店(奥体店)</div>
+                <span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md flex-shrink-0">符合预算</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-md border border-blue-100/50">紧邻奥体</span>
+                <span class="bg-green-50 text-green-600 text-xs px-1.5 py-0.5 rounded-md border border-green-100/50">连锁品牌</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥280</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">如家快捷酒店(奥体北)</div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-md border border-blue-100/50">距场馆2km</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥255</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">汉庭酒店(河西万达)</div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2"><span class="bg-purple-50 text-purple-600 text-xs px-1.5 py-0.5 rounded-md border border-purple-100/50">楼下商圈</span></div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥268</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div><div class="flex justify-end mb-4 msg-enter" style="animation-delay: 0ms;">
+      <div class="max-w-[75%] bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-md">
+        <p class="text-sm leading-relaxed">这个酒店离地铁站有点远，换个步行5分钟内能到地铁的</p>
+      </div>
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 ml-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">我</span>
+      </div></div><div class="flex justify-start mb-4 msg-enter" style="animation-delay: 0ms;">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 mr-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">智</span>
+      </div>
+      <div class="max-w-[88%] bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl rounded-tl-sm shadow-sm px-4 py-3">
+        <p class="text-sm text-gray-700 leading-relaxed">已按"距地铁站≤500米"重新筛选：</p>
+      </div></div><div class="mb-4 ml-10 msg-enter flash-hl" style="animation-delay: 0ms;">
+      <div class="px-1">
+        <div class="flex items-center justify-between mb-3 px-2">
+          <span class="text-base font-bold text-gray-800">🏨 地铁 ≤ 500m 重新匹配</span>
+          <span class="text-xs text-blue-600 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-100/50">🚇 近地铁</span>
+        </div>
+        <div class="hotel-scroll pb-5">
+          <div class="flex gap-3 snap-x snap-mandatory" style="width: max-content;">
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0 ring-2 ring-blue-400/40">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">全季酒店(元通地铁站店)</div>
+                <span class="text-[10px] bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-1.5 py-0.5 rounded-md flex-shrink-0">🚇 100m</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-green-50 text-green-600 text-xs px-1.5 py-0.5 rounded-md border border-green-100/50">符合预算</span>
+                <span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-md border border-blue-100/50">步行2分钟</span>
+                <span class="bg-gray-50 text-gray-600 text-xs px-1.5 py-0.5 rounded-md border border-gray-100/50">安静</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥295</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">亚朵轻居(奥东站)</div>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md flex-shrink-0">🚇 300m</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-purple-50 text-purple-600 text-xs px-1.5 py-0.5 rounded-md border border-purple-100/50">简约风</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥290</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">锦江之星(元通)</div>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md flex-shrink-0">🚇 200m</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2"><span class="bg-green-50 text-green-600 text-xs px-1.5 py-0.5 rounded-md border border-green-100/50">老牌连锁</span></div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥258</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div></div>
+    <div id="typingIndicator" class="justify-start mb-4 hidden">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 mr-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">智</span>
+      </div>
+      <div class="bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl rounded-tl-sm shadow-sm px-4 py-3">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="absolute bottom-6 left-4 right-4 z-30">
+    <div class="relative flex items-center bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-white/90 px-2 pr-2" style="height: 50px;">
+      <button class="flex-shrink-0 w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 ml-0.5">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+      <input id="messageInput" type="text" placeholder="发消息或按住说话..." class="flex-1 bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 px-2.5 py-2 w-0 min-w-0">
+      <button class="flex-shrink-0 w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+      </button>
+      <button id="sendBtn" class="flex-shrink-0 ml-1 w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm transition-transform opacity-50 cursor-not-allowed">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </button>
+    </div>
+    <div class="text-center mt-2 text-[10px] text-gray-400/80 leading-none">
+      内容由 AI 生成 · 出行前请核实信息
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const chatStream = document.getElementById('chatStream');
+  const typing = document.getElementById('typingIndicator');
+  const chatArea = document.getElementById('chatArea');
+
+  // ===== 历史对话抽屉 =====
+  const mask = document.getElementById('historyMask');
+  const openBtn = document.getElementById('historyBtn');
+  const closeBtn = document.getElementById('historyClose');
+  function openHistory() { mask.classList.remove('hidden'); }
+  function closeHistory() { mask.classList.add('hidden'); }
+  openBtn && openBtn.addEventListener('click', openHistory);
+  closeBtn && closeBtn.addEventListener('click', closeHistory);
+  mask && mask.querySelector('.history-mask').addEventListener('click', closeHistory);
+
+  const hotelWrapper = document.getElementById('hotelRoundWrapper');
+  const transportR1 = document.getElementById('round1Transport');
+
+  function scrollBottom() { chatArea.scrollTop = chatArea.scrollHeight; }
+  function showTyping() { typing.classList.remove('hidden'); typing.classList.add('flex'); scrollBottom(); }
+  function hideTyping() { typing.classList.add('hidden'); typing.classList.remove('flex'); }
+
+  function userBubble(text, delay) {
+    const div = document.createElement('div');
+    div.className = 'flex justify-end mb-4 msg-enter';
+    div.style.animationDelay = (delay || 0) + 'ms';
+    div.innerHTML = `
+      <div class="max-w-[75%] bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-md">
+        <p class="text-sm leading-relaxed">${text}</p>
+      </div>
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 ml-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">我</span>
+      </div>`;
+    chatStream.appendChild(div);
+    setTimeout(scrollBottom, 30);
+  }
+
+  function aiBubble(text, delay) {
+    const div = document.createElement('div');
+    div.className = 'flex justify-start mb-4 msg-enter';
+    div.style.animationDelay = (delay || 0) + 'ms';
+    div.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 mr-2 flex-shrink-0 mt-1 flex items-center justify-center shadow-md">
+        <span class="text-white text-xs font-bold">智</span>
+      </div>
+      <div class="max-w-[88%] bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl rounded-tl-sm shadow-sm px-4 py-3">
+        <p class="text-sm text-gray-700 leading-relaxed">${text}</p>
+      </div>`;
+    chatStream.appendChild(div);
+    setTimeout(scrollBottom, 30);
+  }
+
+  // 交通卡片：周四晚班（round2）
+  function renderTransportThursday(delay) {
+    const wrap = document.createElement('div');
+    wrap.className = 'mb-4 ml-10 msg-enter flash-hl';
+    wrap.style.animationDelay = (delay || 0) + 'ms';
+    wrap.innerHTML = `
+      <div class="rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-1.5"><span class="text-lg">🚄</span><span class="text-base font-bold text-gray-800">上海虹桥 ➔ 南京南 · 周四晚班</span></div>
+          <span class="text-xs text-blue-600 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-100/50">条件已更新</span>
+        </div>
+        <div class="border border-gray-100/50 rounded-xl p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2"><span class="text-base font-bold text-gray-900">G2057</span><span class="text-xs text-gray-500">和谐号 · 1.6h</span></div>
+            <span class="text-xs text-green-600 bg-green-50/80 px-2 py-0.5 rounded-full">🟢 余票充足</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-center"><div class="text-lg font-bold text-gray-900">19:30</div><div class="text-xs text-gray-500">上海虹桥</div></div>
+            <div class="flex-1 px-3"><div class="h-px bg-gray-200 relative"><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-500 rounded-full px-2 py-0.5"><span class="text-white text-xs font-semibold">1.6h</span></div></div></div>
+            <div class="text-center"><div class="text-lg font-bold text-gray-900">21:05</div><div class="text-xs text-gray-500">南京南</div></div>
+          </div>
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100/50">
+            <div><span class="text-lg font-bold text-orange-500">¥228</span><span class="text-xs text-gray-500"> 二等座</span></div>
+            <button class="bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm">已锁定</button>
+          </div>
+        </div>
+      </div>`;
+    chatStream.appendChild(wrap);
+    setTimeout(scrollBottom, 30);
+  }
+
+  // 酒店卡片：桔子酒店(奥体店) 方案，预算300内
+  function renderHotelsBelow300(delay) {
+    const wrap = document.createElement('div');
+    wrap.className = 'mb-4 ml-10 msg-enter flash-hl';
+    wrap.style.animationDelay = (delay || 0) + 'ms';
+    wrap.innerHTML = `
+      <div class="px-1">
+        <div class="flex items-center justify-between mb-3 px-2">
+          <span class="text-base font-bold text-gray-800">🏨 条件重筛 · 预算 ≤ 300 元</span>
+          <span class="text-xs text-green-600 bg-green-50/80 px-2 py-0.5 rounded-full border border-green-100/50">符合预算</span>
+        </div>
+        <div class="hotel-scroll pb-5">
+          <div class="flex gap-3 snap-x snap-mandatory" style="width: max-content;">
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0 ring-1 ring-blue-200/60">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">桔子酒店(奥体店)</div>
+                <span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md flex-shrink-0">符合预算</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-md border border-blue-100/50">紧邻奥体</span>
+                <span class="bg-green-50 text-green-600 text-xs px-1.5 py-0.5 rounded-md border border-green-100/50">连锁品牌</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥280</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">如家快捷酒店(奥体北)</div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-md border border-blue-100/50">距场馆2km</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥255</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">汉庭酒店(河西万达)</div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2"><span class="bg-purple-50 text-purple-600 text-xs px-1.5 py-0.5 rounded-md border border-purple-100/50">楼下商圈</span></div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥268</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    chatStream.appendChild(wrap);
+    setTimeout(scrollBottom, 30);
+  }
+
+  // 酒店卡片：全季(元通地铁站店)，距地铁100m
+  function renderHotelsNearSubway(delay) {
+    const wrap = document.createElement('div');
+    wrap.className = 'mb-4 ml-10 msg-enter flash-hl';
+    wrap.style.animationDelay = (delay || 0) + 'ms';
+    wrap.innerHTML = `
+      <div class="px-1">
+        <div class="flex items-center justify-between mb-3 px-2">
+          <span class="text-base font-bold text-gray-800">🏨 地铁 ≤ 500m 重新匹配</span>
+          <span class="text-xs text-blue-600 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-100/50">🚇 近地铁</span>
+        </div>
+        <div class="hotel-scroll pb-5">
+          <div class="flex gap-3 snap-x snap-mandatory" style="width: max-content;">
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0 ring-2 ring-blue-400/40">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">全季酒店(元通地铁站店)</div>
+                <span class="text-[10px] bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-1.5 py-0.5 rounded-md flex-shrink-0">🚇 100m</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-green-50 text-green-600 text-xs px-1.5 py-0.5 rounded-md border border-green-100/50">符合预算</span>
+                <span class="bg-blue-50 text-blue-600 text-xs px-1.5 py-0.5 rounded-md border border-blue-100/50">步行2分钟</span>
+                <span class="bg-gray-50 text-gray-600 text-xs px-1.5 py-0.5 rounded-md border border-gray-100/50">安静</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥295</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">亚朵轻居(奥东站)</div>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md flex-shrink-0">🚇 300m</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <span class="bg-purple-50 text-purple-600 text-xs px-1.5 py-0.5 rounded-md border border-purple-100/50">简约风</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥290</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+            <div class="snap-start w-56 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 p-4 shadow-sm flex-shrink-0">
+              <div class="w-full h-24 rounded-xl mb-2 overflow-hidden bg-gray-200"><img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover"></div>
+              <div class="flex items-center gap-1.5 mb-1">
+                <div class="text-base font-bold text-gray-900 flex-1 min-w-0 truncate">锦江之星(元通)</div>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md flex-shrink-0">🚇 200m</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2"><span class="bg-green-50 text-green-600 text-xs px-1.5 py-0.5 rounded-md border border-green-100/50">老牌连锁</span></div>
+              <div class="flex items-center justify-between">
+                <div><span class="text-lg font-bold text-orange-500">¥258</span><span class="text-xs text-gray-500">/晚</span></div>
+                <button class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">查看详情</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    chatStream.appendChild(wrap);
+    setTimeout(scrollBottom, 30);
+  }
+
+  function replaceOldHotels() {
+    // 旧的首轮酒店直接淡出隐藏
+    hotelWrapper.classList.add('list-out');
+    transportR1.classList.add('list-out');
+    setTimeout(() => {
+      hotelWrapper.style.display = 'none';
+      transportR1.style.display = 'none';
+      scrollBottom();
+    }, 300);
+  }
+
+  // ========== 对话流（点击发送按钮推进用户消息，AI 自动回复） ==========
+  const sendBtn = document.getElementById('sendBtn');
+  const input = document.getElementById('messageInput');
+
+  // 初始状态：HTML 中已直接渲染了第一轮 AI 引导 + 交通 + 酒店卡片
+  // 后续每轮：点击按钮 → 用户消息 → AI 自动回复（+卡片操作）
+  const rounds = [
+    {
+      user: '酒店都有点超预算，能不能降到300以内一晚？另外高铁改到周四晚上走吧，想多玩半天',
+      ai: '好的，已为您调整筛选条件：酒店预算≤300元/晚，去程更新为周四晚班高铁。为您重新匹配：',
+      after: () => {
+        replaceOldHotels();
+        setTimeout(() => { renderTransportThursday(0); renderHotelsBelow300(0); }, 400);
+      }
+    },
+    {
+      user: '这个酒店离地铁站有点远，换个步行5分钟内能到地铁的',
+      ai: '已按"距地铁站≤500米"重新筛选：',
+      after: () => {
+        setTimeout(() => renderHotelsNearSubway(0), 500);
+      }
+    }
+  ];
+
+  let currentRound = 0;
+  let isBusy = false;
+
+  function disableSend() {
+    sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    sendBtn.classList.remove('active:scale-[0.94]');
+    sendBtn.onclick = null;
+  }
+
+  function nextRound() {
+    if (isBusy || currentRound >= rounds.length) return;
+    isBusy = true;
+
+    const round = rounds[currentRound];
+    userBubble(round.user);
+
+    // AI 自动回复
+    setTimeout(() => {
+      showTyping();
+      setTimeout(() => {
+        hideTyping();
+        aiBubble(round.ai);
+        if (round.after) {
+          setTimeout(() => {
+            round.after();
+            finishRound();
+          }, 700);
+        } else {
+          finishRound();
+        }
+      }, 1200);
+    }, 500);
+  }
+
+  function finishRound() {
+    currentRound++;
+    isBusy = false;
+    if (currentRound >= rounds.length) {
+      disableSend();
+    }
+  }
+
+  // 绑定发送按钮
+  sendBtn.addEventListener('click', nextRound);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); nextRound(); }
+  });
+});
+</script>
+
+
+</body></html>

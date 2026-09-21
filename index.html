@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>AI 旅行管家 - 智能行程助手</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #f8fafc, #f5f3ff);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    .launch-card {
+      text-align: center;
+      padding: 3rem 2rem;
+      max-width: 360px;
+      width: 90%;
+    }
+    .launch-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    .launch-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    .launch-desc {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .launch-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-decoration: none;
+    }
+    .launch-btn:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 28px rgba(99, 102, 241, 0.4);
+    }
+    .launch-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="launch-card">
+    <div class="launch-icon">✨</div>
+    <h1 class="launch-title">AI 旅行管家</h1>
+    <p class="launch-desc">智能行程助手 · 精确需求 / 意图澄清 / 条件微调 / 抢票兜底</p>
+    <a href="views/view0_home.html" class="launch-btn">
+      <span>进入应用</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+</body>
+</html>
